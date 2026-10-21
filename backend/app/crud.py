@@ -3,7 +3,7 @@ rules). Routers call these and hand the results to schemas for
 serialization; business logic that has side effects beyond a single query
 (payments, matching) stays in its own dedicated module instead."""
 
-from sqlalchemy import or_
+from sqlalchemy import String, cast, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import (
@@ -39,7 +39,8 @@ def get_published_profiles_page(
     city: str | None = None,
     min_experience: int | None = None,
 ) -> tuple[list[ConsultantProfile], int]:
-    """`q` searches headline, bio and skills (case-insensitive substring)."""
+    """`q` searches headline, bio, skills, experiences, diplomas and
+    certifications (case-insensitive substring)."""
     query = db.query(ConsultantProfile).filter(ConsultantProfile.status == ListingStatus.published)
 
     if q:
@@ -49,6 +50,9 @@ def get_published_profiles_page(
                 ConsultantProfile.headline.ilike(pattern),
                 ConsultantProfile.bio.ilike(pattern),
                 ConsultantProfile.skills.ilike(pattern),
+                cast(ConsultantProfile.experiences, String).ilike(pattern),
+                cast(ConsultantProfile.diplomas, String).ilike(pattern),
+                cast(ConsultantProfile.certifications, String).ilike(pattern),
             )
         )
     if domain:

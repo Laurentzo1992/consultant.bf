@@ -25,6 +25,8 @@ services:
       CORS_ORIGINS: https://${DOMAIN}
       PUBLIC_BACKEND_URL: https://api.${DOMAIN}
       PUBLIC_FRONTEND_URL: https://${DOMAIN}
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -57,3 +59,4 @@ networks:
 
 volumes:
   db_data:
+  uploads:

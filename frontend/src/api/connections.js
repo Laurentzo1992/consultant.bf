@@ -25,3 +25,15 @@ export function getConnectionRequest(id) {
 export function getContact(requestId) {
   return client.get(`/connections/${requestId}/contact`);
 }
+
+/** The consultant's CV (PDF blob) -- company side, approved connections only. */
+export function downloadConsultantCv(requestId) {
+  return client.get(`/connections/${requestId}/cv`, { responseType: "blob" });
+}
+
+/** Opens a downloaded blob in a new tab (PDF viewer) instead of navigating away. */
+export function openBlob(blob) {
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}

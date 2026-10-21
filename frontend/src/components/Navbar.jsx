@@ -14,8 +14,9 @@ function accountLinks(user) {
     ];
   }
   return [
-    { to: "/me/missions", label: "Mes missions" },
+    { to: "/consultants", label: "Rechercher un consultant" },
     { to: "/requests/sent", label: "Consultants contactes" },
+    { to: "/me/missions", label: "Mes missions (optionnel)" },
     { to: "/requests/received", label: "Candidatures recues" },
   ];
 }
@@ -82,7 +83,7 @@ export default function Navbar() {
 
         <div className="nav-links desktop-only">
           <NavLink to="/consultants" className={topLinkClass}>
-            Consultants
+            Trouver un consultant
           </NavLink>
           <NavLink to="/missions" className={topLinkClass} end>
             Missions
@@ -131,7 +132,7 @@ export default function Navbar() {
       {menuOpen && (
         <div className="nav-panel fade-in">
           <NavLink to="/consultants" className={menuItemClass}>
-            Consultants
+            Trouver un consultant
           </NavLink>
           <NavLink to="/missions" className={menuItemClass} end>
             Missions

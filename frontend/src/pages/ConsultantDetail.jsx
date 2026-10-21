@@ -147,6 +147,58 @@ export default function ConsultantDetail() {
 
       <p style={{ whiteSpace: "pre-line" }}>{profile.bio}</p>
 
+      {profile.experiences.length > 0 && (
+        <section className="profile-section">
+          <h2>Experiences</h2>
+          <ul className="timeline">
+            {profile.experiences.map((e, i) => (
+              <li key={i}>
+                <strong>{e.title}</strong>
+                {e.organization ? ` · ${e.organization}` : ""}
+                <span className="meta"> — {e.start_year} - {e.end_year ?? "aujourd'hui"}</span>
+                {e.description && <p style={{ whiteSpace: "pre-line" }}>{e.description}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {profile.diplomas.length > 0 && (
+        <section className="profile-section">
+          <h2>Formation</h2>
+          <ul className="timeline">
+            {profile.diplomas.map((d, i) => (
+              <li key={i}>
+                <strong>{d.title}</strong>
+                {d.institution ? ` · ${d.institution}` : ""}
+                {d.year && <span className="meta"> — {d.year}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {profile.certifications.length > 0 && (
+        <section className="profile-section">
+          <h2>Certifications</h2>
+          <div className="chips">
+            {profile.certifications.map((c, i) => (
+              <span key={i} className="chip">
+                {c.name}
+                {c.issuer ? ` (${c.issuer})` : ""}
+                {c.year ? ` · ${c.year}` : ""}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {profile.has_cv && (
+        <p className="cv-note" style={{ marginTop: "1rem" }}>
+          📄 CV disponible — transmis apres validation de la mise en relation
+        </p>
+      )}
+
       {isOwn && (
         <p className="hint">
           Ceci est votre profil. <Link to="/me/profile">Le modifier</Link>
@@ -154,13 +206,13 @@ export default function ConsultantDetail() {
       )}
       {!user && (
         <p className="hint">
-          <Link to="/login">Connectez-vous</Link> ou <Link to="/register?role=entreprise">creez un compte entreprise</Link>{" "}
+          <Link to="/login">Connectez-vous</Link> ou <Link to="/register?role=entreprise">creez un compte cabinet / entreprise</Link>{" "}
           pour contacter ce consultant.
         </p>
       )}
       {user?.role === "entreprise" && <ContactConsultant profile={profile} />}
       {user?.role === "consultant" && !isOwn && (
-        <p className="hint">Seules les entreprises peuvent contacter un consultant.</p>
+        <p className="hint">Seuls les cabinets et entreprises peuvent contacter un consultant.</p>
       )}
     </div>
   );

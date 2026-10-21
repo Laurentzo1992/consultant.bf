@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 # Must be set before app.config.Settings() is instantiated (on first import
 # of app.database / app.main below). Real OS env vars always take
@@ -7,6 +8,9 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 os.environ.setdefault("ADMIN_SESSION_SECRET", "test-admin-session-secret")
 os.environ.setdefault("PAYMENT_PROVIDER", "mock")
+os.environ.setdefault(
+    "UPLOAD_DIR", os.path.join(tempfile.gettempdir(), f"consultantbf-test-uploads-{os.getpid()}")
+)
 
 import pytest
 from fastapi.testclient import TestClient

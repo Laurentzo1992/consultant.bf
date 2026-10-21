@@ -10,20 +10,20 @@ import { formatMoney } from "../constants";
 
 const STEPS = [
   {
-    title: "Publiez",
-    text: "Le consultant publie son profil d'expertise, l'entreprise publie sa mission. Aucune coordonnee n'est visible.",
+    title: "Le consultant s'inscrit",
+    text: "Il cree son profil complet : expertise, competences, experiences, diplomes, certifications et CV.",
   },
   {
-    title: "Matching",
-    text: "Notre algorithme compare domaine, competences, experience, lieu et TJM, et classe les meilleurs profils.",
+    title: "Le cabinet recherche",
+    text: "Cabinets et entreprises filtrent les profils par competence, domaine, ville et experience. Les profils sont anonymes.",
   },
   {
-    title: "Demandez",
-    text: "L'entreprise contacte un consultant, ou le consultant postule a une mission, avec un message.",
+    title: "Il demande le contact",
+    text: "Le profil correspond ? Le cabinet demande la mise en relation avec un message expliquant son besoin.",
   },
   {
-    title: "Validation",
-    text: "Notre equipe verifie chaque demande. Une fois validee, les deux parties recoivent les coordonnees.",
+    title: "Validation et echange",
+    text: "Notre equipe verifie la demande, puis transmet a chacun les coordonnees de l'autre, et le CV au cabinet.",
   },
 ];
 
@@ -34,7 +34,7 @@ export default function Home() {
   const [missions, setMissions] = useState(null);
 
   useEffect(() => {
-    listConsultants({ page: 1, pageSize: 3 })
+    listConsultants({ page: 1, pageSize: 6 })
       .then((res) => setConsultants(res.data))
       .catch(() => setConsultants({ items: [], total: 0 }));
     listMissions({ page: 1, pageSize: 3 })
@@ -43,7 +43,6 @@ export default function Home() {
   }, []);
 
   const consultantCta = user?.role === "consultant" ? "/me/profile" : "/register?role=consultant";
-  const companyCta = user?.role === "entreprise" ? "/missions/new" : "/register?role=entreprise";
 
   return (
     <div>
@@ -53,16 +52,16 @@ export default function Home() {
         <div className="hero-content fade-in-up">
           <span className="hero-eyebrow">Burkina Faso · Afrique de l'Ouest</span>
           <h1>
-            Le bon <em>consultant</em> pour chaque mission.
+            Trouvez le <em>consultant</em> qu'il vous faut.
           </h1>
           <p className="hero-sub">
-            Consultant.bf met en relation consultants independants et entreprises, ONG et institutions.
-            Matching par competences, coordonnees protegees jusqu'a validation par notre equipe.
+            Les consultants publient un profil complet, les cabinets et entreprises les recherchent et choisissent
+            avec qui entrer en contact. Coordonnees et CV proteges jusqu'a validation par notre equipe.
           </p>
           <div className="hero-actions">
             {(!user || user.role === "entreprise") && (
-              <Link to={companyCta} className="btn btn-cta">
-                Publier une mission
+              <Link to="/consultants" className="btn btn-cta">
+                Trouver un consultant
               </Link>
             )}
             {(!user || user.role === "consultant") && (
@@ -73,7 +72,7 @@ export default function Home() {
           </div>
           <div className="hero-badges">
             <span>🔒 Coordonnees protegees</span>
-            <span>🎯 Score de compatibilite</span>
+            <span>📄 Profils complets et CV</span>
             <span>✅ Mises en relation verifiees</span>
           </div>
         </div>
@@ -99,7 +98,17 @@ export default function Home() {
       </p>
 
       <div className="section-head">
-        <h2>Dernieres missions</h2>
+        <h2>Consultants a decouvrir</h2>
+        <Link to="/consultants">Tous les consultants{consultants ? ` (${consultants.total})` : ""} →</Link>
+      </div>
+      {consultants?.items.length === 0 && <p className="meta">Aucun profil publie pour l'instant.</p>}
+      <div className="grid">
+        {consultants?.items.map((p) => (
+          <ProfileCard key={p.id} profile={p} />
+        ))}
+      </div>
+      <div className="section-head">
+        <h2>Missions publiees</h2>
         <Link to="/missions">Toutes les missions{missions ? ` (${missions.total})` : ""} →</Link>
       </div>
       {missions?.items.length === 0 && <p className="meta">Aucune mission publiee pour l'instant.</p>}
@@ -109,16 +118,6 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="section-head">
-        <h2>Consultants disponibles</h2>
-        <Link to="/consultants">Tous les consultants{consultants ? ` (${consultants.total})` : ""} →</Link>
-      </div>
-      {consultants?.items.length === 0 && <p className="meta">Aucun profil publie pour l'instant.</p>}
-      <div className="grid">
-        {consultants?.items.map((p) => (
-          <ProfileCard key={p.id} profile={p} />
-        ))}
-      </div>
     </div>
   );
 }

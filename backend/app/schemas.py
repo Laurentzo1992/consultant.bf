@@ -142,6 +142,38 @@ class Token(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+CURRENT_YEAR_MAX = 2100
+
+
+class Experience(BaseModel):
+    """A past assignment or position. `organization` is optional: some
+    consultants prefer not to name clients publicly."""
+
+    title: str = Field(min_length=2, max_length=200)
+    organization: str | None = Field(None, max_length=200)
+    start_year: int = Field(ge=1950, le=CURRENT_YEAR_MAX)
+    end_year: int | None = Field(None, ge=1950, le=CURRENT_YEAR_MAX)  # None = ongoing
+    description: str | None = Field(None, max_length=2000)
+
+    @model_validator(mode="after")
+    def _years(self) -> "Experience":
+        if self.end_year is not None and self.end_year < self.start_year:
+            raise ValueError("L'annee de fin doit etre posterieure a l'annee de debut")
+        return self
+
+
+class Diploma(BaseModel):
+    title: str = Field(min_length=2, max_length=200)
+    institution: str | None = Field(None, max_length=200)
+    year: int | None = Field(None, ge=1950, le=CURRENT_YEAR_MAX)
+
+
+class Certification(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    issuer: str | None = Field(None, max_length=200)
+    year: int | None = Field(None, ge=1950, le=CURRENT_YEAR_MAX)
+
+
 class ProfileIn(BaseModel):
     headline: str = Field(min_length=3, max_length=255)
     bio: str = Field(min_length=20)
@@ -153,11 +185,19 @@ class ProfileIn(BaseModel):
     work_mode: WorkMode = WorkMode.hybride
     languages: str | None = None
     city: str | None = None
+    experiences: list[Experience] = Field(default_factory=list, max_length=30)
+    diplomas: list[Diploma] = Field(default_factory=list, max_length=15)
+    certifications: list[Certification] = Field(default_factory=list, max_length=20)
 
     @field_validator("skills", mode="after")
     @classmethod
     def _skills(cls, v: str | list[str]) -> str:
         return normalize_skills(v)
+
+    @field_validator("experiences", mode="after")
+    @classmethod
+    def _most_recent_first(cls, v: list[Experience]) -> list[Experience]:
+        return sorted(v, key=lambda e: (e.end_year is not None, -(e.end_year or 0), -e.start_year))
 
 
 class ProfilePublic(BaseModel):
@@ -176,6 +216,11 @@ class ProfilePublic(BaseModel):
     work_mode: WorkMode
     languages: str | None
     city: str | None
+    experiences: list[Experience]
+    diplomas: list[Diploma]
+    certifications: list[Certification]
+    # Whether a CV was uploaded -- the file itself is never public.
+    has_cv: bool
     status: ListingStatus
     created_at: datetime
     # Matching score (0-100) when the listing is returned as a recommendation.
@@ -196,6 +241,10 @@ class ProfilePublic(BaseModel):
             work_mode=p.work_mode,
             languages=p.languages,
             city=p.city,
+            experiences=p.experiences or [],
+            diplomas=p.diplomas or [],
+            certifications=p.certifications or [],
+            has_cv=bool(p.cv_filename),
             status=p.status,
             created_at=p.created_at,
             score=score,
@@ -334,6 +383,8 @@ class ConnectionRequestOut(BaseModel):
     rejection_reason: str | None
     consultant: PartySummary
     consultant_headline: str | None
+    # Whether the consultant uploaded a CV (downloadable once approved).
+    consultant_has_cv: bool
     company: PartySummary
     company_sector: str | None
     mission: MissionSummary | None
@@ -356,6 +407,7 @@ class ConnectionRequestOut(BaseModel):
                 city=consultant.city,
             ),
             consultant_headline=consultant.profile.headline if consultant.profile else None,
+            consultant_has_cv=bool(consultant.profile and consultant.profile.cv_filename),
             company=PartySummary(
                 id=company.id,
                 full_name=company.full_name if revealed else MASKED_NAME,

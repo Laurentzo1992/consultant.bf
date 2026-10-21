@@ -33,3 +33,17 @@ export function setMyProfileVisibility(visible) {
 export function getMyMatchingMissions() {
   return client.get("/consultants/me/matches");
 }
+
+export function uploadMyCv(file) {
+  const form = new FormData();
+  form.append("file", file);
+  return client.put("/consultants/me/cv", form);
+}
+
+export function deleteMyCv() {
+  return client.delete("/consultants/me/cv");
+}
+
+export function downloadMyCv() {
+  return client.get("/consultants/me/cv", { responseType: "blob" });
+}

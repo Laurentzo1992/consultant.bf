@@ -1,9 +1,10 @@
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app import crud, matching
+from app import crud, cv_storage, matching
 from app.database import get_db
 from app.deps import get_current_consultant
 from app.models import ConsultantProfile, Domain, ListingStatus, User
@@ -85,6 +86,48 @@ def set_my_visibility(
     db.commit()
     db.refresh(profile)
     return ProfilePublic.from_model(profile)
+
+
+def _require_profile(db: Session, user: User) -> ConsultantProfile:
+    profile = crud.get_profile_of(db, user.id)
+    if profile is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Creez d'abord votre profil")
+    return profile
+
+
+@router.put("/me/cv", response_model=ProfilePublic)
+def upload_my_cv(
+    file: UploadFile = File(..., description="CV au format PDF"),
+    current_user: User = Depends(get_current_consultant),
+    db: Session = Depends(get_db),
+):
+    """Uploads (or replaces) my CV. It stays private: companies can only
+    download it once a connection with me has been approved."""
+    profile = _require_profile(db, current_user)
+    new_filename = cv_storage.save_pdf(file)
+    old_filename, profile.cv_filename = profile.cv_filename, new_filename
+    db.commit()
+    cv_storage.delete(old_filename)
+    db.refresh(profile)
+    return ProfilePublic.from_model(profile)
+
+
+@router.delete("/me/cv", response_model=ProfilePublic)
+def delete_my_cv(current_user: User = Depends(get_current_consultant), db: Session = Depends(get_db)):
+    profile = _require_profile(db, current_user)
+    old_filename, profile.cv_filename = profile.cv_filename, None
+    db.commit()
+    cv_storage.delete(old_filename)
+    db.refresh(profile)
+    return ProfilePublic.from_model(profile)
+
+
+@router.get("/me/cv")
+def download_my_cv(current_user: User = Depends(get_current_consultant), db: Session = Depends(get_db)):
+    profile = _require_profile(db, current_user)
+    if not profile.cv_filename:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Aucun CV")
+    return FileResponse(cv_storage.path_of(profile.cv_filename), media_type="application/pdf", filename="mon-cv.pdf")
 
 
 @router.get("/me/matches", response_model=list[MissionPublic])

@@ -1,8 +1,10 @@
 # Consultant.bf
 
-Plateforme de mise en relation entre **consultants independants** et **entreprises,
-ONG et institutions** qui cherchent une expertise. Les profils et missions sont
-publics mais anonymes ; l'identite et les coordonnees ne sont echangees qu'apres
+Plateforme de mise en relation entre **consultants independants** et **cabinets /
+entreprises** qui cherchent une expertise. Le consultant cree son compte et publie un
+profil complet (experiences, diplomes, certifications, CV) ; le cabinet cree son compte,
+recherche les profils et decide avec qui entrer en contact. Les profils sont publics
+mais anonymes ; l'identite, les coordonnees et le CV ne sont transmis qu'apres
 validation de la mise en relation par un administrateur.
 
 Construit sur la meme architecture que [site-relation](https://github.com/Laurentzo1992/site-relation)
@@ -27,16 +29,26 @@ Deploiement en production (VPS + Docker Compose + Caddy) : voir **[DEPLOYMENT.md
 
 ## Fonctionnement
 
-1. Inscription comme **consultant** ou **entreprise** (telephone et email toujours prives).
-2. Le consultant cree son profil (`PUT /consultants/me`) et paie la publication -> profil visible.
-3. L'entreprise cree une mission (`POST /missions`) et paie la publication -> mission visible.
-4. Le matching propose :
+Parcours principal :
+
+1. Inscription comme **consultant** ou **cabinet / entreprise** (telephone et email toujours prives).
+2. Le consultant cree son profil complet (`PUT /consultants/me`) : expertise, competences,
+   experiences, diplomes, certifications, conditions ; il depose son CV en PDF
+   (`PUT /consultants/me/cv`, 5 Mo max) et paie la publication -> profil visible.
+3. Le cabinet recherche des profils (`GET /consultants` : mot-cle — y compris dans les
+   experiences, diplomes et certifications —, domaine, ville, experience minimale), ouvre une
+   fiche et demande la mise en relation avec un message.
+4. Apres paiement et validation par l'admin, chacun recoit les coordonnees de l'autre et le
+   cabinet peut telecharger le CV (`GET /connections/{id}/cv`).
+
+Fonction secondaire (optionnelle) — les missions :
+
+1. Le cabinet peut aussi publier une mission (`POST /missions`) et paie la publication.
+2. Le matching propose :
    - a l'entreprise, les consultants les plus compatibles avec chaque mission (`GET /missions/{id}/matches`) ;
    - au consultant, les missions les plus compatibles avec son profil (`GET /consultants/me/matches`).
-5. Une demande de mise en relation (`POST /connections`) est creee par celui qui en prend l'initiative,
-   qui la paie -> statut `pending_admin`. Le destinataire la voit (identite masquee).
-6. Un administrateur approuve ou rejette depuis `/admin`.
-7. Une fois approuvee, chacun voit les coordonnees de l'autre (`GET /connections/{id}/contact`).
+3. Le consultant peut postuler a une mission ; la demande suit le meme circuit
+   (paiement par celui qui en prend l'initiative, validation admin, puis coordonnees).
 
 ### Le score de compatibilite
 
@@ -115,7 +127,7 @@ npm run dev
 
 ```bash
 cd backend
-pytest        # 50 tests : roles, publication, masquage, mises en relation, matching, SebPay
+pytest        # 57 tests : roles, profil complet, CV, masquage, mises en relation, matching, SebPay
 ruff check .
 ```
 
@@ -125,6 +137,7 @@ ruff check .
 backend/
   app/
     models.py            User (role), ConsultantProfile, Mission, ConnectionRequest, Payment
+    cv_storage.py        stockage prive des CV (PDF) sous UPLOAD_DIR (volume Docker "uploads")
     schemas.py           schemas Pydantic (identite et contact JAMAIS exposes publiquement)
     matching.py          score de compatibilite consultant <-> mission
     crud.py              requetes

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app import crud
+from app import crud, cv_storage
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import (
@@ -133,3 +134,25 @@ def get_contact(request_id: int, current_user: User = Depends(get_current_user),
         whatsapp=other.whatsapp,
         email=other.email,
     )
+
+
+@router.get("/{request_id}/cv")
+def download_consultant_cv(
+    request_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """The consultant's CV, for the company of an APPROVED connection only."""
+    req = _get_request_for_party(db, request_id, current_user)
+    if current_user.id != req.company_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "CV introuvable")
+    if req.status != ConnectionStatus.approved:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "La mise en relation n'a pas encore ete validee")
+    profile = req.consultant.profile
+    if profile is None or not profile.cv_filename:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ce consultant n'a pas depose de CV")
+    safe_name = "".join(c for c in req.consultant.full_name if c.isalnum() or c in " -").strip().replace(" ", "-")
+    return FileResponse(
+        cv_storage.path_of(profile.cv_filename),
+        media_type="application/pdf",
+        filename=f"CV-{safe_name or 'consultant'}.pdf",
+    )
+

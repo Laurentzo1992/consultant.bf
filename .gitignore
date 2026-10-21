@@ -5,6 +5,7 @@ backend/**/__pycache__/
 backend/.env
 backend/.env.production
 backend/*.db
+backend/uploads/
 
 # Frontend
 frontend/node_modules/

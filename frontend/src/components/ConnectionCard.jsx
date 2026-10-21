@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { getContact } from "../api/connections";
+import { downloadConsultantCv, getContact, openBlob } from "../api/connections";
 import { apiErrorMessage } from "../api/payments";
 import PaymentBox from "./PaymentBox";
 import { ChatIcon } from "./icons";
@@ -14,7 +14,7 @@ function describe(request, viewerRole) {
     const company = request.company.company_name;
     return request.initiated_by === "consultant"
       ? `Candidature envoyee${mission}`
-      : `${company} (${request.company_sector || "organisation"}) souhaite vous rencontrer${mission}`;
+      : `${company} (${request.company_sector || "cabinet"}) souhaite vous rencontrer${mission}`;
   }
   const who = request.consultant.full_name === "Identite masquee"
     ? request.consultant_headline || "Consultant"
@@ -27,6 +27,15 @@ export default function ConnectionCard({ request, viewerRole, onChanged, showPay
   const [contact, setContact] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const openCv = async () => {
+    setError("");
+    try {
+      openBlob((await downloadConsultantCv(request.id)).data);
+    } catch (err) {
+      setError("Impossible d'ouvrir le CV");
+    }
+  };
 
   const revealContact = async () => {
     setError("");
@@ -101,6 +110,14 @@ export default function ConnectionCard({ request, viewerRole, onChanged, showPay
               Contacter sur WhatsApp
             </a>
           )}
+        </div>
+      )}
+
+      {request.status === "approved" && viewerRole === "entreprise" && request.consultant_has_cv && (
+        <div className="card-actions">
+          <button className="btn-outline btn-sm" onClick={openCv}>
+            📄 Telecharger le CV
+          </button>
         </div>
       )}
 

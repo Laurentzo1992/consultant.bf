@@ -21,6 +21,10 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
 
+    # Where uploaded CVs are stored (a Docker volume in compose).
+    upload_dir: str = "uploads"
+    cv_max_bytes: int = 5 * 1024 * 1024
+
     # One of "mock" (default, no external calls, useful for local dev),
     # "ligdicash" or "sebpay" -- or several, comma-separated ("ligdicash,sebpay"),
     # in which case the user picks at checkout and the first is the default.

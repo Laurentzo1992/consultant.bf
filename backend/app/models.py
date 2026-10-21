@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -149,6 +149,18 @@ class ConsultantProfile(Base):
     work_mode: Mapped[WorkMode] = mapped_column(Enum(WorkMode), default=WorkMode.hybride, nullable=False)
     languages: Mapped[str | None] = mapped_column(String(255), nullable=True)
     city: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Lists of small dicts, validated by schemas.Experience / Diploma /
+    # Certification. Kept as JSON on the profile (rather than child tables):
+    # they are only ever read and written together with it.
+    experiences: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    diplomas: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    certifications: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+
+    # Stored file name of the uploaded CV (PDF) under settings.upload_dir.
+    # PRIVATE like the contact details: only downloadable by a company once a
+    # connection with this consultant has been approved.
+    cv_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     status: Mapped[ListingStatus] = mapped_column(
         Enum(ListingStatus), default=ListingStatus.draft, nullable=False

@@ -73,6 +73,26 @@ COMPANIES = [
 ]
 
 
+def _career(headline: str, years: int, i: int) -> dict:
+    """Plausible demo experiences / diplomas / certifications."""
+    start = 2026 - years
+    split = start + years // 2
+    return {
+        "experiences": [
+            {"title": "Consultant independant", "organization": None, "start_year": split, "end_year": None,
+             "description": f"{headline} pour des PME, ONG et institutions publiques."},
+            {"title": "Consultant senior", "organization": ["Cabinet Kaizen", "Sahel Conseil", "BF Advisory"][i % 3],
+             "start_year": start, "end_year": split, "description": None},
+        ],
+        "diplomas": [
+            {"title": "Master professionnel", "institution": "Universite Joseph Ki-Zerbo", "year": start - 1},
+        ],
+        "certifications": (
+            [{"name": "PMP - Project Management Professional", "issuer": "PMI", "year": split}] if i % 2 == 0 else []
+        ),
+    }
+
+
 def _email(name: str) -> str:
     return name.lower().replace(" ", ".") + "@demo.consultant.bf"
 
@@ -96,6 +116,7 @@ def main() -> None:
                 availability=Availability.immediate if i % 2 == 0 else Availability.under_1_month,
                 work_mode=mode, languages="Francais, Anglais" if i % 3 == 0 else "Francais, Moore", city=city,
                 status=ListingStatus.published,
+                **_career(headline, years, i),
             )
             db.add(user)
             created += 1

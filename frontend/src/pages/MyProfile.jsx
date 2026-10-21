@@ -1,8 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { getMyMatchingMissions, getMyProfile, saveMyProfile, setMyProfileVisibility } from "../api/consultants";
+import {
+  deleteMyCv,
+  downloadMyCv,
+  getMyMatchingMissions,
+  getMyProfile,
+  saveMyProfile,
+  setMyProfileVisibility,
+  uploadMyCv,
+} from "../api/consultants";
+import { openBlob } from "../api/connections";
 import { apiErrorMessage } from "../api/payments";
 import PaymentBox from "../components/PaymentBox";
+import ListEditor, { cleanItems } from "../components/ListEditor";
 import { MissionCard } from "../components/ListingCards";
 import usePrices from "../hooks/usePrices";
 import { AVAILABILITIES, DOMAINS, LISTING_STATUS_LABELS, WORK_MODES, formatMoney } from "../constants";
@@ -18,18 +28,134 @@ const EMPTY = {
   work_mode: "hybride",
   languages: "",
   city: "",
+  experiences: [],
+  diplomas: [],
+  certifications: [],
 };
 
+const EXPERIENCE_FIELDS = [
+  { name: "title", label: "Poste / role", required: true, placeholder: "ex. Auditeur senior" },
+  { name: "organization", label: "Organisation (facultatif)", placeholder: "Laissez vide si confidentiel" },
+  { name: "start_year", label: "Debut (annee)", type: "number", required: true },
+  { name: "end_year", label: "Fin (vide = en cours)", type: "number" },
+  { name: "description", label: "Realisations", type: "textarea", wide: true, placeholder: "Missions, resultats..." },
+];
+const DIPLOMA_FIELDS = [
+  { name: "title", label: "Diplome", required: true, placeholder: "ex. Master en audit" },
+  { name: "institution", label: "Etablissement" },
+  { name: "year", label: "Annee", type: "number" },
+];
+const CERTIFICATION_FIELDS = [
+  { name: "name", label: "Certification", required: true, placeholder: "ex. PMP, CISA, ACCA" },
+  { name: "issuer", label: "Organisme" },
+  { name: "year", label: "Annee", type: "number" },
+];
+
+/** What makes a profile "complete", shown as a checklist to the consultant. */
+function completeness(profile) {
+  const checks = [
+    ["Titre et presentation detaillee", profile.headline && profile.bio.length >= 100],
+    ["Au moins 3 competences", profile.skills.length >= 3],
+    ["Au moins une experience", profile.experiences.length > 0],
+    ["Un diplome", profile.diplomas.length > 0],
+    ["TJM indique", Boolean(profile.daily_rate)],
+    ["Langues", Boolean(profile.languages)],
+    ["CV en PDF", profile.has_cv],
+  ];
+  const done = checks.filter(([, ok]) => ok).length;
+  return { percent: Math.round((done / checks.length) * 100), missing: checks.filter(([, ok]) => !ok).map(([l]) => l) };
+}
+
 function toForm(profile) {
+  const str = (v) => (v == null ? "" : String(v));
   return {
     ...EMPTY,
-    ...profile,
+    headline: profile.headline,
+    bio: profile.bio,
+    domain: profile.domain,
     skills: profile.skills.join(", "),
-    years_experience: String(profile.years_experience ?? ""),
+    years_experience: str(profile.years_experience),
     daily_rate: profile.daily_rate ? String(profile.daily_rate) : "",
+    availability: profile.availability,
+    work_mode: profile.work_mode,
     languages: profile.languages ?? "",
     city: profile.city ?? "",
+    experiences: profile.experiences.map((e) => ({
+      ...e,
+      organization: e.organization ?? "",
+      description: e.description ?? "",
+      start_year: str(e.start_year),
+      end_year: str(e.end_year),
+    })),
+    diplomas: profile.diplomas.map((d) => ({ ...d, institution: d.institution ?? "", year: str(d.year) })),
+    certifications: profile.certifications.map((c) => ({ ...c, issuer: c.issuer ?? "", year: str(c.year) })),
   };
+}
+
+function CvSection({ profile, onChange }) {
+  const input = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const upload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Le CV ne doit pas depasser 5 Mo");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const res = await uploadMyCv(file);
+      onChange(res.data);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Impossible d'envoyer le CV"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!window.confirm("Supprimer votre CV ?")) return;
+    const res = await deleteMyCv();
+    onChange(res.data);
+  };
+
+  const view = async () => openBlob((await downloadMyCv()).data);
+
+  return (
+    <div className="card fade-in-up">
+      <h2 style={{ fontSize: "1.1rem" }}>Mon CV (PDF)</h2>
+      <p className="meta">
+        Votre CV reste prive : un cabinet ne peut le telecharger qu'apres validation d'une mise en relation avec vous.
+        PDF uniquement, 5 Mo maximum.
+      </p>
+      <input ref={input} type="file" accept="application/pdf,.pdf" hidden onChange={upload} />
+      <div className="card-actions">
+        {profile.has_cv ? (
+          <>
+            <span className="status-pill published">CV depose</span>
+            <button type="button" className="link-btn" onClick={view}>
+              Voir
+            </button>
+            <button type="button" className="btn-outline btn-sm" disabled={busy} onClick={() => input.current.click()}>
+              Remplacer
+            </button>
+            <button type="button" className="link-btn" style={{ color: "var(--red-600)" }} onClick={remove}>
+              Supprimer
+            </button>
+          </>
+        ) : (
+          <button type="button" disabled={busy} onClick={() => input.current.click()}>
+            {busy ? "Envoi..." : "Deposer mon CV"}
+          </button>
+        )}
+      </div>
+      {error && <p className="error">{error}</p>}
+    </div>
+  );
 }
 
 export default function MyProfile() {
@@ -42,12 +168,17 @@ export default function MyProfile() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const loadMatches = () =>
+    getMyMatchingMissions()
+      .then((m) => setMatches(m.data))
+      .catch(() => setMatches([]));
+
   const load = () =>
     getMyProfile()
       .then((res) => {
         setProfile(res.data);
         setForm(toForm(res.data));
-        getMyMatchingMissions().then((m) => setMatches(m.data)).catch(() => setMatches([]));
+        loadMatches();
       })
       .catch(() => {
         setProfile(null);
@@ -59,6 +190,7 @@ export default function MyProfile() {
   }, []);
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const setList = (field) => (items) => setForm({ ...form, [field]: items });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -72,12 +204,16 @@ export default function MyProfile() {
         daily_rate: form.daily_rate ? Number(form.daily_rate) : null,
         languages: form.languages || null,
         city: form.city || null,
+        experiences: cleanItems(form.experiences, { required: "title", years: ["start_year", "end_year"] }),
+        diplomas: cleanItems(form.diplomas, { required: "title", years: ["year"] }),
+        certifications: cleanItems(form.certifications, { required: "name", years: ["year"] }),
       });
       setProfile(res.data);
       setForm(toForm(res.data));
       setEditing(false);
       setSaved(true);
-      getMyMatchingMissions().then((m) => setMatches(m.data)).catch(() => {});
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      loadMatches();
     } catch (err) {
       setError(apiErrorMessage(err, "Impossible d'enregistrer le profil"));
     } finally {
@@ -92,59 +228,76 @@ export default function MyProfile() {
 
   if (profile === undefined) return <div className="spinner" />;
 
+  const progress = profile ? completeness(profile) : null;
+
   return (
     <div>
       <h1>Mon profil consultant</h1>
 
       {profile && !editing && (
-        <div className="card fade-in-up">
-          <span className={`status-pill ${profile.status}`}>{LISTING_STATUS_LABELS[profile.status]}</span>
-          <h2 style={{ marginTop: "0.8rem" }}>{profile.headline}</h2>
-          <p className="meta">
-            {profile.years_experience} ans · {profile.daily_rate ? `${formatMoney(profile.daily_rate)} / jour` : "TJM a discuter"}
-            {profile.city ? ` · ${profile.city}` : ""}
-          </p>
-          {saved && <p className="hint">✓ Profil enregistre.</p>}
+        <>
+          <div className="card fade-in-up">
+            <span className={`status-pill ${profile.status}`}>{LISTING_STATUS_LABELS[profile.status]}</span>
+            <h2 style={{ marginTop: "0.8rem" }}>{profile.headline}</h2>
+            <p className="meta">
+              {profile.years_experience} ans ·{" "}
+              {profile.daily_rate ? `${formatMoney(profile.daily_rate)} / jour` : "TJM a discuter"}
+              {profile.city ? ` · ${profile.city}` : ""}
+            </p>
+            {saved && <p className="hint">✓ Profil enregistre.</p>}
 
-          {profile.status === "pending_payment" && (
-            <>
-              <p>
-                Derniere etape : publiez votre profil pour apparaitre dans les recherches et les recommandations des
-                entreprises.
-              </p>
-              <PaymentBox
-                type="profile_publication"
-                referenceId={profile.id}
-                amount={prices.profile_publication}
-                currency={prices.currency}
-                onPaid={load}
-              />
-            </>
-          )}
+            <div className="completeness">
+              <div className="completeness-head">
+                <strong>Profil complete a {progress.percent}%</strong>
+                <span className="meta">Un profil complet est mieux classe par les cabinets.</span>
+              </div>
+              <div className="completeness-bar" role="progressbar" aria-valuenow={progress.percent} aria-valuemin={0} aria-valuemax={100}>
+                <span style={{ width: `${progress.percent}%` }} />
+              </div>
+              {progress.missing.length > 0 && <p className="meta">A completer : {progress.missing.join(" · ")}</p>}
+            </div>
 
-          <div className="card-actions">
-            <button className="btn-outline" onClick={() => setEditing(true)}>
-              Modifier mon profil
-            </button>
-            {profile.status === "published" && <Link to={`/consultants/${profile.id}`}>Voir ma fiche publique →</Link>}
-            {(profile.status === "published" || profile.status === "archived") && (
-              <button className="link-btn" onClick={toggleVisibility}>
-                {profile.status === "published" ? "Masquer mon profil" : "Rendre mon profil visible"}
-              </button>
+            {profile.status === "pending_payment" && (
+              <>
+                <p>
+                  Derniere etape : publiez votre profil pour apparaitre dans les recherches des cabinets et entreprises.
+                </p>
+                <PaymentBox
+                  type="profile_publication"
+                  referenceId={profile.id}
+                  amount={prices.profile_publication}
+                  currency={prices.currency}
+                  onPaid={load}
+                />
+              </>
             )}
+
+            <div className="card-actions">
+              <button className="btn-outline" onClick={() => setEditing(true)}>
+                Modifier mon profil
+              </button>
+              {profile.status === "published" && <Link to={`/consultants/${profile.id}`}>Voir ma fiche publique →</Link>}
+              {(profile.status === "published" || profile.status === "archived") && (
+                <button className="link-btn" onClick={toggleVisibility}>
+                  {profile.status === "published" ? "Masquer mon profil" : "Rendre mon profil visible"}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+          <CvSection profile={profile} onChange={setProfile} />
+        </>
       )}
 
       {editing && (
-        <div className="card form-card fade-in-up" style={{ maxWidth: 680 }}>
+        <div className="card form-card fade-in-up" style={{ maxWidth: 760 }}>
           <div className="form-icon">🧭</div>
           <h2>{profile ? "Modifier mon profil" : "Creer mon profil"}</h2>
           <p className="meta">
-            Votre nom n'apparait jamais publiquement : votre expertise parle pour vous. Plus vos competences sont
-            precises, meilleur est le matching.
+            Votre nom n'apparait jamais publiquement : votre expertise parle pour vous. Plus votre profil est complet et
+            precis, plus les cabinets vous trouvent.
           </p>
           <form onSubmit={submit}>
+            <h3 className="form-section">Expertise</h3>
             <label>
               Titre professionnel
               <input
@@ -183,9 +336,39 @@ export default function MyProfile() {
                 onChange={update("bio")}
                 required
                 minLength={20}
-                placeholder="Parcours, references (sans nommer vos clients si confidentiel), types de missions..."
+                placeholder="Parcours, secteurs d'intervention, types de missions, valeur ajoutee..."
               />
             </label>
+
+            <h3 className="form-section">Experiences professionnelles</h3>
+            <ListEditor
+              items={form.experiences}
+              onChange={setList("experiences")}
+              fields={EXPERIENCE_FIELDS}
+              blank={{ title: "", organization: "", start_year: "", end_year: "", description: "" }}
+              addLabel="Ajouter une experience"
+              emptyHint="Ajoutez vos principales experiences, de la plus recente a la plus ancienne."
+            />
+
+            <h3 className="form-section">Formation</h3>
+            <ListEditor
+              items={form.diplomas}
+              onChange={setList("diplomas")}
+              fields={DIPLOMA_FIELDS}
+              blank={{ title: "", institution: "", year: "" }}
+              addLabel="Ajouter un diplome"
+            />
+
+            <h3 className="form-section">Certifications</h3>
+            <ListEditor
+              items={form.certifications}
+              onChange={setList("certifications")}
+              fields={CERTIFICATION_FIELDS}
+              blank={{ name: "", issuer: "", year: "" }}
+              addLabel="Ajouter une certification"
+            />
+
+            <h3 className="form-section">Conditions</h3>
             <div className="row">
               <label>
                 TJM ({prices.currency} / jour)
@@ -222,6 +405,7 @@ export default function MyProfile() {
               Langues
               <input value={form.languages} onChange={update("languages")} placeholder="ex. Francais, Anglais, Moore" />
             </label>
+            {!profile && <p className="hint">Vous pourrez deposer votre CV (PDF) juste apres avoir enregistre votre profil.</p>}
             {error && <p className="error">{error}</p>}
             <div className="card-actions">
               <button type="submit" disabled={busy}>
@@ -232,7 +416,14 @@ export default function MyProfile() {
                     : `Continuer vers la publication (${formatMoney(prices.profile_publication, prices.currency)})`}
               </button>
               {profile && (
-                <button type="button" className="btn-outline" onClick={() => setEditing(false)}>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={() => {
+                    setForm(toForm(profile));
+                    setEditing(false);
+                  }}
+                >
                   Annuler
                 </button>
               )}
@@ -250,8 +441,8 @@ export default function MyProfile() {
           {matches === null && <div className="spinner" />}
           {matches?.length === 0 && (
             <p className="meta">
-              Aucune mission compatible pour le moment. Ajoutez des competences precises a votre profil pour elargir
-              les recommandations.
+              Aucune mission compatible pour le moment. Les cabinets peuvent aussi vous trouver directement via la
+              recherche de profils.
             </p>
           )}
           <div className="grid">

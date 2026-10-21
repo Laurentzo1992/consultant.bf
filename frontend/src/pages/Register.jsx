@@ -8,8 +8,8 @@ import { apiErrorMessage } from "../api/payments";
 import { COMPANY_SIZES } from "../constants";
 
 const ROLES = [
-  { value: "consultant", title: "Je suis consultant", text: "Je publie mon expertise et je postule aux missions." },
-  { value: "entreprise", title: "Je recrute", text: "Entreprise, ONG ou institution : je publie des missions." },
+  { value: "consultant", title: "Je suis consultant", text: "Je publie mon profil complet pour etre trouve par les cabinets." },
+  { value: "entreprise", title: "Cabinet / entreprise", text: "Je recherche des consultants et je les contacte." },
 ];
 
 export default function Register() {
@@ -46,7 +46,7 @@ export default function Register() {
     try {
       const payload = { ...form, company_size: form.company_size || null };
       await register(payload);
-      navigate(isCompany ? "/missions/new" : "/me/profile");
+      navigate(isCompany ? "/consultants" : "/me/profile");
     } catch (err) {
       setError(apiErrorMessage(err, "Inscription impossible"));
     } finally {
@@ -82,13 +82,13 @@ export default function Register() {
         {isCompany && (
           <>
             <label>
-              Nom de l'organisation
+              Nom du cabinet / de l'entreprise
               <input value={form.company_name} onChange={update("company_name")} required />
             </label>
             <div className="row">
               <label>
                 Secteur d'activite
-                <input value={form.company_sector} onChange={update("company_sector")} placeholder="ex. Agro-industrie" />
+                <input value={form.company_sector} onChange={update("company_sector")} placeholder="ex. Conseil en management" />
               </label>
               <label>
                 Taille

@@ -4,11 +4,11 @@ export default function BrowseTabs() {
   const cls = ({ isActive }) => (isActive ? "active" : "");
   return (
     <div className="tabs" role="tablist">
-      <NavLink to="/missions" className={cls} end>
-        Missions
-      </NavLink>
       <NavLink to="/consultants" className={cls} end>
         Consultants
+      </NavLink>
+      <NavLink to="/missions" className={cls} end>
+        Missions
       </NavLink>
     </div>
   );

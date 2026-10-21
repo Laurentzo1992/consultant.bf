@@ -20,7 +20,7 @@ const COPY = {
   received: {
     consultant: {
       title: "Propositions recues",
-      empty: "Aucune entreprise ne vous a encore contacte. Un profil complet et des competences precises aident !",
+      empty: "Aucun cabinet ne vous a encore contacte. Un profil complet et des competences precises aident !",
       cta: { to: "/me/profile", label: "Ameliorer mon profil" },
     },
     entreprise: {
