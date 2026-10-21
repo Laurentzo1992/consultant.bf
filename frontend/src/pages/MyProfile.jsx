@@ -13,6 +13,8 @@ import { openBlob } from "../api/connections";
 import { apiErrorMessage } from "../api/payments";
 import PaymentBox from "../components/PaymentBox";
 import ListEditor, { cleanItems } from "../components/ListEditor";
+import ProfileView from "../components/ProfileView";
+import { FileIcon } from "../components/icons";
 import { MissionCard } from "../components/ListingCards";
 import usePrices from "../hooks/usePrices";
 import { AVAILABILITIES, DOMAINS, LISTING_STATUS_LABELS, WORK_MODES, formatMoney } from "../constants";
@@ -126,33 +128,33 @@ function CvSection({ profile, onChange }) {
   const view = async () => openBlob((await downloadMyCv()).data);
 
   return (
-    <div className="card fade-in-up">
-      <h2 style={{ fontSize: "1.1rem" }}>Mon CV (PDF)</h2>
-      <p className="meta">
-        Votre CV reste prive : un cabinet ne peut le telecharger qu'apres validation d'une mise en relation avec vous.
-        PDF uniquement, 5 Mo maximum.
-      </p>
+    <div className="pv-panel">
+      <h2>Mon CV</h2>
       <input ref={input} type="file" accept="application/pdf,.pdf" hidden onChange={upload} />
-      <div className="card-actions">
-        {profile.has_cv ? (
-          <>
-            <span className="status-pill published">CV depose</span>
-            <button type="button" className="link-btn" onClick={view}>
-              Voir
-            </button>
-            <button type="button" className="btn-outline btn-sm" disabled={busy} onClick={() => input.current.click()}>
-              Remplacer
-            </button>
-            <button type="button" className="link-btn" style={{ color: "var(--red-600)" }} onClick={remove}>
-              Supprimer
-            </button>
-          </>
-        ) : (
-          <button type="button" disabled={busy} onClick={() => input.current.click()}>
-            {busy ? "Envoi..." : "Deposer mon CV"}
-          </button>
-        )}
+      <div className="pv-cv-row">
+        <FileIcon size={26} />
+        <div>
+          <strong>{profile.has_cv ? "CV depose (PDF)" : "Aucun CV depose"}</strong>
+          Prive : transmis au cabinet seulement apres validation d'une mise en relation.
+        </div>
       </div>
+      {profile.has_cv ? (
+        <div className="pv-cv-actions">
+          <button type="button" className="link-btn" onClick={view}>
+            Voir
+          </button>
+          <button type="button" className="link-btn" disabled={busy} onClick={() => input.current.click()}>
+            {busy ? "Envoi..." : "Remplacer"}
+          </button>
+          <button type="button" className="link-btn" style={{ color: "var(--red-600)" }} onClick={remove}>
+            Supprimer
+          </button>
+        </div>
+      ) : (
+        <button type="button" className="pv-cta" disabled={busy} onClick={() => input.current.click()}>
+          {busy ? "Envoi..." : "Deposer mon CV (PDF, 5 Mo max.)"}
+        </button>
+      )}
       {error && <p className="error">{error}</p>}
     </div>
   );
@@ -232,60 +234,79 @@ export default function MyProfile() {
 
   return (
     <div>
-      <h1>Mon profil consultant</h1>
+      {!(profile && !editing) && <h1>Mon profil consultant</h1>}
 
       {profile && !editing && (
-        <>
-          <div className="card fade-in-up">
-            <span className={`status-pill ${profile.status}`}>{LISTING_STATUS_LABELS[profile.status]}</span>
-            <h2 style={{ marginTop: "0.8rem" }}>{profile.headline}</h2>
-            <p className="meta">
-              {profile.years_experience} ans ·{" "}
-              {profile.daily_rate ? `${formatMoney(profile.daily_rate)} / jour` : "TJM a discuter"}
-              {profile.city ? ` · ${profile.city}` : ""}
-            </p>
-            {saved && <p className="hint">✓ Profil enregistre.</p>}
+        <ProfileView
+          profile={profile}
+          top={saved && <p className="hint">✓ Profil enregistre. Voici votre fiche telle que les cabinets la voient.</p>}
+          aside={
+            <>
+              <div className="pv-panel">
+                <div className="pv-owner-status">
+                  <h2>Mon profil</h2>
+                  <span className={`status-pill ${profile.status}`}>{LISTING_STATUS_LABELS[profile.status]}</span>
+                </div>
 
-            <div className="completeness">
-              <div className="completeness-head">
-                <strong>Profil complete a {progress.percent}%</strong>
-                <span className="meta">Un profil complet est mieux classe par les cabinets.</span>
+                <div className="completeness">
+                  <div className="completeness-head">
+                    <strong>Complete a {progress.percent}%</strong>
+                  </div>
+                  <div
+                    className="completeness-bar"
+                    role="progressbar"
+                    aria-valuenow={progress.percent}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <span style={{ width: `${progress.percent}%` }} />
+                  </div>
+                  {progress.missing.length > 0 ? (
+                    <ul className="pv-missing">
+                      {progress.missing.map((m) => (
+                        <li key={m}>{m}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="meta">Profil complet : il est mieux classe dans les recherches des cabinets.</span>
+                  )}
+                </div>
+
+                {profile.status === "pending_payment" && (
+                  <>
+                    <p className="pv-panel-text">
+                      Derniere etape : publiez votre profil pour apparaitre dans les recherches des cabinets.
+                    </p>
+                    <PaymentBox
+                      type="profile_publication"
+                      referenceId={profile.id}
+                      amount={prices.profile_publication}
+                      currency={prices.currency}
+                      onPaid={load}
+                    />
+                  </>
+                )}
+
+                <div className="pv-owner-actions">
+                  <button className="pv-cta" onClick={() => setEditing(true)}>
+                    Modifier mon profil
+                  </button>
+                  {profile.status === "published" && (
+                    <Link to={`/consultants/${profile.id}`} className="btn btn-outline">
+                      Voir ma fiche publique
+                    </Link>
+                  )}
+                  {(profile.status === "published" || profile.status === "archived") && (
+                    <button className="link-btn" onClick={toggleVisibility}>
+                      {profile.status === "published" ? "Masquer mon profil" : "Rendre mon profil visible"}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="completeness-bar" role="progressbar" aria-valuenow={progress.percent} aria-valuemin={0} aria-valuemax={100}>
-                <span style={{ width: `${progress.percent}%` }} />
-              </div>
-              {progress.missing.length > 0 && <p className="meta">A completer : {progress.missing.join(" · ")}</p>}
-            </div>
-
-            {profile.status === "pending_payment" && (
-              <>
-                <p>
-                  Derniere etape : publiez votre profil pour apparaitre dans les recherches des cabinets et entreprises.
-                </p>
-                <PaymentBox
-                  type="profile_publication"
-                  referenceId={profile.id}
-                  amount={prices.profile_publication}
-                  currency={prices.currency}
-                  onPaid={load}
-                />
-              </>
-            )}
-
-            <div className="card-actions">
-              <button className="btn-outline" onClick={() => setEditing(true)}>
-                Modifier mon profil
-              </button>
-              {profile.status === "published" && <Link to={`/consultants/${profile.id}`}>Voir ma fiche publique →</Link>}
-              {(profile.status === "published" || profile.status === "archived") && (
-                <button className="link-btn" onClick={toggleVisibility}>
-                  {profile.status === "published" ? "Masquer mon profil" : "Rendre mon profil visible"}
-                </button>
-              )}
-            </div>
-          </div>
-          <CvSection profile={profile} onChange={setProfile} />
-        </>
+              <CvSection profile={profile} onChange={setProfile} />
+            </>
+          }
+        />
       )}
 
       {editing && (

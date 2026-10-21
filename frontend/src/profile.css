@@ -1,0 +1,612 @@
+/* ---------------------------------------------------------------------- */
+/* Profile view (CV-style layout, see components/ProfileView.jsx)           */
+/* Uses the design tokens defined in index.css.                             */
+/* ---------------------------------------------------------------------- */
+
+.pv-back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.pv-back:hover {
+  color: var(--brand-700);
+}
+
+.pv-header {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
+}
+
+.pv-banner {
+  height: 96px;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(242, 182, 50, 0.55), transparent 45%),
+    linear-gradient(120deg, var(--brand-700), var(--brand-500));
+}
+
+.pv-header-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.2rem;
+  padding: 0 2rem;
+  margin-top: -44px;
+}
+
+.pv-avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  background: var(--brand-50);
+  color: var(--brand-600);
+  border: 4px solid var(--card-bg);
+  box-shadow: var(--shadow-md);
+}
+
+.pv-identity {
+  padding-bottom: 0.2rem;
+  min-width: 0;
+}
+
+.pv-domain {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber-500);
+  margin-top: 3.2rem;
+}
+
+.pv-identity h1 {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  margin: 0.15rem 0 0.35rem;
+}
+
+.pv-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-700);
+}
+
+.pv-sub > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pv-availability .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber-500);
+}
+
+.pv-availability.on .dot {
+  background: var(--green-600);
+  box-shadow: 0 0 0 3px var(--green-100);
+}
+
+.pv-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 1.5rem 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.pv-stats > div {
+  padding: 1rem 1.5rem;
+  border-left: 1px solid var(--border);
+}
+
+.pv-stats > div:first-child {
+  border-left: none;
+  padding-left: 2rem;
+}
+
+.pv-stats dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pv-stats dd {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink-900);
+}
+
+.pv-stats dd small {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.pv-stats dd.pv-stat-text {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.pv-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.pv-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pv-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.4rem 1.6rem;
+}
+
+.pv-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.05rem;
+  margin-bottom: 1rem;
+}
+
+.pv-section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--brand-50);
+  color: var(--brand-600);
+}
+
+.pv-bio {
+  white-space: pre-line;
+  margin: 0;
+}
+
+.pv-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pv-skills span {
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  background: var(--brand-50);
+  border: 1px solid var(--brand-100);
+  color: var(--brand-700);
+  font-size: 0.86rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Skills are stored lowercase: capitalize the first letter only, not every
+   word ("Controle de gestion", not "Controle De Gestion"). */
+.pv-skills span::first-letter {
+  text-transform: uppercase;
+}
+
+.pv-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pv-timeline li {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 1.2rem;
+}
+
+.pv-period {
+  text-align: right;
+  font-size: 0.85rem;
+  padding-top: 0.1rem;
+}
+
+.pv-period strong {
+  display: block;
+  color: var(--ink-900);
+}
+
+.pv-period span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.pv-entry {
+  position: relative;
+  padding: 0 0 1.4rem 1.3rem;
+  border-left: 2px solid var(--brand-100);
+}
+
+.pv-timeline li:last-child .pv-entry {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+
+.pv-entry::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 0.3rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  border: 3px solid var(--brand-600);
+}
+
+.pv-entry h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.pv-current {
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--green-100);
+  color: var(--green-600);
+}
+
+.pv-org {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--brand-700);
+}
+
+.pv-desc {
+  margin: 0.4rem 0 0;
+  font-size: 0.92rem;
+  white-space: pre-line;
+}
+
+.pv-cards,
+.pv-certs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+
+.pv-cards li {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.pv-cards h3 {
+  font-size: 0.95rem;
+  margin: 0 0 0.2rem;
+}
+
+.pv-cards p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.pv-certs li {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: var(--amber-100);
+}
+
+.pv-cert-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  color: var(--amber-500);
+}
+
+.pv-certs strong {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--ink-900);
+}
+
+.pv-certs span {
+  font-size: 0.82rem;
+  color: var(--ink-700);
+}
+
+/* Side column ---------------------------------------------------------- */
+
+.pv-aside {
+  position: sticky;
+  top: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pv-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.4rem;
+  box-shadow: var(--shadow-md);
+}
+
+.pv-panel h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.8rem;
+}
+
+.pv-panel-text {
+  font-size: 0.92rem;
+}
+
+.pv-panel .btn,
+.pv-cta {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.pv-contact-form label {
+  font-size: 0.88rem;
+}
+
+.pv-price {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.pv-assurances {
+  list-style: none;
+  margin: 1.2rem 0 0;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-700);
+}
+
+.pv-assurances li {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.pv-assurances svg {
+  flex-shrink: 0;
+  color: var(--brand-600);
+  margin-top: 0.1rem;
+}
+
+.pv-steps {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: var(--brand-50);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.84rem;
+  color: var(--ink-700);
+}
+
+.pv-steps li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.pv-steps li > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  color: var(--brand-700);
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+
+/* Owner tools in the side column (MyProfile) --------------------------- */
+
+.pv-owner-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.pv-owner-status h2 {
+  margin: 0;
+}
+
+.pv-owner-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.pv-owner-actions .btn,
+.pv-owner-actions button:not(.link-btn) {
+  width: 100%;
+  justify-content: center;
+}
+
+.pv-owner-actions .link-btn {
+  align-self: center;
+  font-size: 0.88rem;
+}
+
+.pv-cv-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem;
+  border-radius: 12px;
+  background: var(--brand-50);
+  margin: 0.4rem 0 0.8rem;
+}
+
+.pv-cv-row svg {
+  color: var(--brand-600);
+  flex-shrink: 0;
+}
+
+.pv-cv-row div {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.86rem;
+}
+
+.pv-cv-row strong {
+  display: block;
+  color: var(--ink-900);
+}
+
+.pv-cv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  justify-content: center;
+  font-size: 0.86rem;
+}
+
+.pv-missing {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  color: var(--ink-700);
+}
+
+.pv-missing li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.pv-missing li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--amber-500);
+  flex-shrink: 0;
+}
+
+/* Responsive ----------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .pv-layout {
+    grid-template-columns: 1fr;
+  }
+  .pv-aside {
+    position: static;
+    order: -1;
+  }
+  .pv-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pv-stats > div:nth-child(3) {
+    border-left: none;
+    padding-left: 2rem;
+  }
+  .pv-stats > div:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 560px) {
+  .pv-header-body {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 1.2rem;
+    gap: 0.6rem;
+  }
+  .pv-avatar {
+    width: 80px;
+    height: 80px;
+  }
+  .pv-domain {
+    margin-top: 0;
+  }
+  .pv-stats > div,
+  .pv-stats > div:first-child,
+  .pv-stats > div:nth-child(3) {
+    padding: 0.9rem 1.2rem;
+  }
+  .pv-section {
+    padding: 1.2rem;
+  }
+  .pv-timeline li {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+  .pv-period {
+    text-align: left;
+    padding-left: 1.3rem;
+  }
+  .pv-period strong {
+    display: inline;
+    margin-right: 0.4rem;
+  }
+}
