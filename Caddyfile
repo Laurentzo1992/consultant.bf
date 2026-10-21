@@ -1,0 +1,27 @@
+# NOT run standalone in this deployment -- the VPS already runs a shared
+# Caddy (in /opt/caddy) which owns ports 80/443 and imports every
+# /opt/caddy/sites/*.caddy file. Save the blocks below as
+# /opt/caddy/sites/consultant-bf.caddy (do not add a top-level `{ ... }`
+# global options block there).
+#
+# For this to resolve, the "consultantbf-backend" / "consultantbf-frontend"
+# containers (see docker-compose.prod.yml) must be on the same Docker
+# network as that Caddy (the "proxy" network) -- that network's name goes in
+# CADDY_NETWORK in the root .env. See DEPLOYMENT.md for the full steps and
+# how to reload Caddy after adding this file.
+
+consultant.bf {
+	encode zstd gzip
+	reverse_proxy consultantbf-frontend:80
+}
+
+# The backend's CORS only allows https://consultant.bf, so www must redirect
+# rather than serve the app itself.
+www.consultant.bf {
+	redir https://consultant.bf{uri} permanent
+}
+
+api.consultant.bf {
+	encode zstd gzip
+	reverse_proxy consultantbf-backend:8000
+}
